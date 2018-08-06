@@ -101,7 +101,7 @@ def main(in_folder, gene_list):
         print("Genes to process:", gene_list)
         os.chdir(in_folder)
         
-        # Iterate through the gene list to treat only the genes present in it.
+        # Iterate through the gene list to treat only the genes mentioned in it.
         for gene in gene_list:
             print(gene)
             
