@@ -8,8 +8,6 @@ from Bio import AlignIO
 
 ############################################################################################################################################
 def BuildingTrees(myInputBT):
-    """ A function that takes a fasta file as input, align it with mafft, trim it using TrimAl and building a tree with RAxML. 
-    Three metrics are calculated: standard deviation of protein length, the trimmed alignment length and the tree certainty. """
     aligned_tmp_file = "/tmp/Aligned.fasta"
     trimmed_tmp_file = "/tmp/Trimmed.fasta"
 
@@ -49,7 +47,14 @@ def BuildingTrees(myInputBT):
     p4 = subprocess.Popen(cmd)
     p4.communicate()
 
-# 5. Files and output
+# 5. Parse TC file and extract relative tree certainty
+    with open("RAxML_info.TC") as tc_file:
+        for line in tc_file.readlines():
+            if line.startswith("Relative tree certainty for this tree:"):
+                tree_certainty = line.split(" ")[-1]
+    
+
+# 6. Files and output
     file_r = open(myInputBT + '.result','w')
 
     file_r.write("Standard deviation of protein length: ")
@@ -62,12 +67,11 @@ def BuildingTrees(myInputBT):
     os.remove(aligned_tmp_file)
     os.remove(trimmed_tmp_file)
 
-    return(stdev, trimmed_length)
+    return(stdev, trimmed_length, tree_certainty)
 
 ############################################################################################################################################
 
 def raw_cur_finder(folder):
-    """ A function that takes a gene foler as input and verify whether the raw and curated folders and files are present in the directory."""
     raw_found = False
     cur_found = False
     
@@ -85,41 +89,30 @@ def raw_cur_finder(folder):
     except:
         print("Curated file not found!")
 
-    # Returns the fasta files paths and whether they exist or not (Boolean).
     return(raw_path, raw_found, cur_path, cur_found)
 
 ############################################################################################################################################
 
 def main(in_folder, gene_list):
-    """ Main function that takes the input folder and gene list, processes the sequences and outputs the input in a tab-separated file."""
-    
-    # Output file creation
     with open("metrics_out.txt", "w+") as metrics_out:
-        # Header line
-        metrics_out.write("gene" + "\t " + "file" + "\t " + "stdev" + "\t" + "trim_len" + "\n")
-        
+        metrics_out.write("gene" + "\t " + "file" + "\t " + "stdev" + "\t" + "trim_len" + "\t" + "relative_TC" + "\n")
+
         print("Genes to process:", gene_list)
         os.chdir(in_folder)
-        
-        # Iterate through the gene list to treat only the genes mentioned in it.
+
         for gene in gene_list:
             print(gene)
-            
-            # Function that returns whether there is a fasta file for the curated and raw sequences or not.
+
             raw_cur = raw_cur_finder(gene)
             if raw_cur[1] and raw_cur[3] == True:
                 path_to_raw = raw_cur[0][0]
                 path_to_cur = raw_cur[2][0]
 
-                # First, raw sequences:
-                # Function that builds the trees and outputs the metrics
                 results_raw = BuildingTrees(path_to_raw)
-                # Metrics output into the metrics file
-                metrics_out.write("".join([str(gene), "\t raw_seq \t", str(results_raw[0]), "\t", str(results_raw[1]), "\n"]))
+                metrics_out.write("".join([str(gene), "\t raw \t", str(results_raw[0]), "\t", str(results_raw[1]), "\t", str(results_raw[2]), "\n"]))
 
-                # Same for curated sequences
                 results_cur = BuildingTrees(path_to_cur)
-                metrics_out.write("".join([str(gene), "\t curated_seq \t", str(results_cur[0]), "\t", str(results_cur[1]), "\n"]))
+                metrics_out.write("".join([str(gene), "\t curated \t", str(results_cur[0]), "\t", str(results_cur[1]), "\t", str(results_cur[2]), "\n"]))
 
             print("Gene: ", gene, "processed!")
 
