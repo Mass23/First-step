@@ -1,4 +1,4 @@
-# Structure of the arguments: python3 AnnotationPaper.py data_folder genes_list
+# Structure of the arguments: python3 pipeline.py data_folder genes_list
 
 import subprocess
 import glob
@@ -37,32 +37,19 @@ def BuildingTrees(myInputBT):
     alignment = AlignIO.read(trimmed_tmp_file, 'fasta')
     trimmed_length = alignment.get_alignment_length()
 
-    # GC/others
-    gcount = 0
-    ccount = 0
-    tcount = 0
-    acount = 0
+    # Identity
     identity_count = 0
 
     for i in range(0, trimmed_length):
         nuc_set = set()
 
         for species in alignment:
-            nuc_set.add(species.seq[i])
-            if species.seq[i] == "A":
-                acount += 1
-            elif species.seq[i] == "C":
-                ccount += 1
-            elif species.seq[i] == "G":
-                gcount += 1
-            elif species.seq[i] == "T":
-                tcount += 1
+            nuc_set.add(str(species.seq[i]))
         
         if len(nuc_set) == 1:
             identity_count += 1
     
     identity = identity_count / trimmed_length
-    gc_content = (gcount + ccount) / (acount + ccount + gcount + tcount)
             
 
 # 3. Tree construction for multithreading add '-T', '8'
@@ -97,7 +84,7 @@ def BuildingTrees(myInputBT):
     os.remove(aligned_tmp_file)
     os.remove(trimmed_tmp_file)
 
-    return(stdev, trimmed_length, tree_certainty, identity, gc_content)
+    return(stdev, trimmed_length, tree_certainty, identity)
 
 ############################################################################################################################################
 
@@ -125,7 +112,7 @@ def raw_cur_finder(folder):
 
 def main(in_folder, gene_list):
     with open("metrics_out.txt", "w+") as metrics_out:
-        metrics_out.write("gene" + "\t " + "file" + "\t " + "stdev" + "\t" + "trim_len" + "\t" + "relative_TC" + "\t" + "Identity" + "\t" + "GC content" + "\n")
+        metrics_out.write("gene" + "\t " + "file" + "\t " + "stdev" + "\t" + "trim_len" + "\t" + "relative_TC" + "\t" + "Identity" + "\n")
 
         print("Genes to process:", gene_list)
         os.chdir(in_folder)
@@ -139,10 +126,10 @@ def main(in_folder, gene_list):
                 path_to_cur = raw_cur[2][0]
 
                 results_raw = BuildingTrees(path_to_raw)
-                metrics_out.write(''.join([str(gene), "\traw\t", str(results_raw[0]), "\t", str(results_raw[1]), "\t", str(results_raw[2]), "\t", str(results_raw[3]),"\t", str(results_raw[4]),"\n"]))
+                metrics_out.write(''.join([str(gene), "\traw\t", str(results_raw[0]), "\t", str(results_raw[1]), "\t", str(results_raw[2]), "\t", str(results_raw[3]),"\n"]))
 
                 results_cur = BuildingTrees(path_to_cur)
-                metrics_out.write(''.join([str(gene), "\tcurated\t", str(results_cur[0]), "\t", str(results_cur[1]), "\t", str(results_cur[2]), "\t", str(results_raw[3]),"\t", str(results_raw[4]),"\n"]))
+                metrics_out.write(''.join([str(gene), "\tcurated\t", str(results_cur[0]), "\t", str(results_cur[1]), "\t", str(results_cur[2]), "\t", str(results_raw[3]),"\n"]))
 
             print("Gene: ", gene, "processed!")
 
@@ -150,7 +137,7 @@ def main(in_folder, gene_list):
 
 
 import sys
-# Structure of the arguments: python3 AnnotationPaper.py data_folder genes_list
+# Structure of the arguments: python3 pipeline.py data_folder genes_list
 args = sys.argv
 data_folder = args[1]
 gene_list = args[2]
